@@ -113,7 +113,7 @@
     </script>
 </head>
 <body>
-    <div class="container">
+        <div class="container">
         <h1>掘金 vs 雷霆 押注</h1>
         <div class="teams">
             <div class="team" id="nuggets">掘金 <span style="font-size:14px;color:#888;">(赔率 1)</span></div>
@@ -146,7 +146,7 @@
                 </tbody>
             </table>
         </div>
-    </div>
+            </div>
     <script>
         let selectedTeam = null;
         const nuggets = document.getElementById('nuggets');
@@ -178,12 +178,16 @@
 
         // 加载押注记录
         function loadBetHistory() {
+            const betHistoryBody = document.getElementById('betHistoryBody');
+            betHistoryBody.innerHTML = "<tr><td colspan='6' style='text-align:center;color:#888;'>加载中...</td></tr>";
             const query = new AV.Query('BetRecord');
             query.descending('createdAt');
             query.limit(50);
             query.find().then(records => {
-                const betHistoryBody = document.getElementById('betHistoryBody');
                 betHistoryBody.innerHTML = '';
+                if (records.length === 0) {
+                    betHistoryBody.innerHTML = "<tr><td colspan='6' style='text-align:center;color:#888;'>暂无押注记录</td></tr>";
+                }
                 records.forEach(record => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -196,6 +200,8 @@
                     `;
                     betHistoryBody.appendChild(tr);
                 });
+            }).catch(() => {
+                betHistoryBody.innerHTML = "<tr><td colspan='6' style='text-align:center;color:red;'>加载失败，请刷新页面</td></tr>";
             });
         }
 
@@ -221,6 +227,10 @@
             result.style.display = 'block';
             result.textContent = `${username} 押注了【${selectedTeam}】队，金额：${amount} 元。若获胜可得 ${payout} 元。祝你好运！`;
 
+            // 禁用按钮防止重复提交
+            betBtn.disabled = true;
+            betBtn.textContent = '押注中...';
+
             // 保存到 LeanCloud
             const BetRecord = AV.Object.extend('BetRecord');
             const bet = new BetRecord();
@@ -233,7 +243,19 @@
             bet.set('payout', payout);
             bet.set('time', timeStr);
             bet.save().then(() => {
+                // 清空输入
+                usernameInput.value = '';
+                amountInput.value = '';
+                selectedTeam = null;
+                nuggets.classList.remove('selected');
+                thunder.classList.remove('selected');
+                betBtn.disabled = false;
+                betBtn.textContent = '押注';
                 loadBetHistory();
+            }).catch(() => {
+                alert('押注失败，请重试！');
+                betBtn.disabled = false;
+                betBtn.textContent = '押注';
             });
         };
     </script>
