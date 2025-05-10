@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>掘金 vs 雷霆 押注</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: #fff;
+            margin-top: 60px;
+            padding: 32px 24px 24px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            width: 600px;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 16px;
+            color: #222;
+        }
+        .teams {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 24px;
+        }
+        .team {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #e1e1e1;
+            margin: 0;
+            transition: border 0.2s, background 0.2s;
+            font-weight: bold;
+            font-size: 20px;
+            white-space: nowrap;
+        }
+        .team.selected {
+            border: 2px solid #007aff;
+            background: #eaf4ff;
+            color: #007aff;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+            width: 100%;
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007aff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #005ecb;
+        }
+        .result {
+            margin-top: 24px;
+            font-size: 17px;
+            color: #222;
+            background: #eaf4ff;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        table#betHistory {
+            width: 100%;
+            min-width: 560px;
+        }
+        table#betHistory th, table#betHistory td {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>掘金 vs 雷霆 押注</h1>
+        <div class="teams">
+            <div class="team" id="nuggets">掘金 <span style="font-size:14px;color:#888;">(赔率 1)</span></div>
+            <div class="team" id="thunder">雷霆 <span style="font-size:14px;color:#888;">(赔率 1.5)</span></div>
+        </div>
+        <div class="input-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名">
+        </div>
+        <div class="input-group">
+            <label for="amount">押注金额（元）</label>
+            <input type="number" id="amount" min="1" placeholder="请输入押注金额">
+        </div>
+        <button id="betBtn">押注</button>
+        <div class="result" id="result" style="display:none;"></div>
+        <div style="margin-top:36px;text-align:left;">
+            <h2 style="font-size:20px;">押注记录</h2>
+            <table id="betHistory" style="width:100%;border-collapse:collapse;background:#fafbfc;">
+                <thead>
+                    <tr style="background:#eaf4ff;">
+                        <th style="padding:6px;border:1px solid #e1e1e1;">用户名</th>
+                        <th style="padding:6px;border:1px solid #e1e1e1;">队伍</th>
+                        <th style="padding:6px;border:1px solid #e1e1e1;">金额(元)</th>
+                        <th style="padding:6px;border:1px solid #e1e1e1;">赔率</th>
+                        <th style="padding:6px;border:1px solid #e1e1e1;">可得金额(元)</th>
+                        <th style="padding:6px;border:1px solid #e1e1e1;">时间</th>
+                    </tr>
+                </thead>
+                <tbody id="betHistoryBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        let selectedTeam = null;
+        const nuggets = document.getElementById('nuggets');
+        const thunder = document.getElementById('thunder');
+        const betBtn = document.getElementById('betBtn');
+        const result = document.getElementById('result');
+        const amountInput = document.getElementById('amount');
+        const usernameInput = document.getElementById('username');
+
+        // 赔率设置
+        const odds = {
+            '掘金': 1,
+            '雷霆': 1.5
+        };
+
+        function selectTeam(team) {
+            selectedTeam = team;
+            if (team === '掘金') {
+                nuggets.classList.add('selected');
+                thunder.classList.remove('selected');
+            } else {
+                thunder.classList.add('selected');
+                nuggets.classList.remove('selected');
+            }
+        }
+
+        nuggets.onclick = () => selectTeam('掘金');
+        thunder.onclick = () => selectTeam('雷霆');
+
+        betBtn.onclick = function() {
+            const username = usernameInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            if (!username) {
+                alert('请输入用户名！');
+                return;
+            }
+            if (!selectedTeam) {
+                alert('请选择要押注的队伍！');
+                return;
+            }
+            if (!amount || amount <= 0) {
+                alert('请输入有效的押注金额！');
+                return;
+            }
+            const payout = (amount * odds[selectedTeam]).toFixed(2);
+            result.style.display = 'block';
+            result.textContent = `${username} 押注了【${selectedTeam}】队，金额：${amount} 元。若获胜可得 ${payout} 元。祝你好运！`;
+
+            // 押注记录
+            const now = new Date();
+            const timeStr = now.toLocaleString();
+            const betHistoryBody = document.getElementById('betHistoryBody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style='padding:6px;border:1px solid #e1e1e1;'>${username}</td>
+                <td style='padding:6px;border:1px solid #e1e1e1;'>${selectedTeam}</td>
+                <td style='padding:6px;border:1px solid #e1e1e1;'>${amount}</td>
+                <td style='padding:6px;border:1px solid #e1e1e1;'>${odds[selectedTeam]}</td>
+                <td style='padding:6px;border:1px solid #e1e1e1;'>${payout}</td>
+                <td style='padding:6px;border:1px solid #e1e1e1;'>${timeStr}</td>
+            `;
+            // 新记录插到最上面
+            betHistoryBody.insertBefore(tr, betHistoryBody.firstChild);
+        };
+    </script>
+</body>
+</html> 
