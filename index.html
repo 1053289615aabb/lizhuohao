@@ -102,6 +102,15 @@
             white-space: nowrap;
         }
     </style>
+    <!-- LeanCloud SDK -->
+    <script src="https://unpkg.com/leancloud-storage/dist/av-min.js"></script>
+    <script>
+      AV.init({
+        appId: '1rrC9SYoYEnp6JaNq6FkEMde-gzGz0hSz',
+        appKey: '7YYjc1UQxymF2r1a8jZy1pQe',
+        serverURLs: 'https://1rrc9sy0.lc-cn-n1-shared.com'
+      });
+    </script>
 </head>
 <body>
     <div class="container">
@@ -167,6 +176,32 @@
         nuggets.onclick = () => selectTeam('掘金');
         thunder.onclick = () => selectTeam('雷霆');
 
+        // 加载押注记录
+        function loadBetHistory() {
+            const query = new AV.Query('BetRecord');
+            query.descending('createdAt');
+            query.limit(50);
+            query.find().then(records => {
+                const betHistoryBody = document.getElementById('betHistoryBody');
+                betHistoryBody.innerHTML = '';
+                records.forEach(record => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style='padding:6px;border:1px solid #e1e1e1;'>${record.get('username')}</td>
+                        <td style='padding:6px;border:1px solid #e1e1e1;'>${record.get('team')}</td>
+                        <td style='padding:6px;border:1px solid #e1e1e1;'>${record.get('amount')}</td>
+                        <td style='padding:6px;border:1px solid #e1e1e1;'>${record.get('odds')}</td>
+                        <td style='padding:6px;border:1px solid #e1e1e1;'>${record.get('payout')}</td>
+                        <td style='padding:6px;border:1px solid #e1e1e1;'>${record.get('time')}</td>
+                    `;
+                    betHistoryBody.appendChild(tr);
+                });
+            });
+        }
+
+        // 页面加载时拉取记录
+        window.onload = loadBetHistory;
+
         betBtn.onclick = function() {
             const username = usernameInput.value.trim();
             const amount = parseFloat(amountInput.value);
@@ -186,21 +221,20 @@
             result.style.display = 'block';
             result.textContent = `${username} 押注了【${selectedTeam}】队，金额：${amount} 元。若获胜可得 ${payout} 元。祝你好运！`;
 
-            // 押注记录
+            // 保存到 LeanCloud
+            const BetRecord = AV.Object.extend('BetRecord');
+            const bet = new BetRecord();
             const now = new Date();
             const timeStr = now.toLocaleString();
-            const betHistoryBody = document.getElementById('betHistoryBody');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style='padding:6px;border:1px solid #e1e1e1;'>${username}</td>
-                <td style='padding:6px;border:1px solid #e1e1e1;'>${selectedTeam}</td>
-                <td style='padding:6px;border:1px solid #e1e1e1;'>${amount}</td>
-                <td style='padding:6px;border:1px solid #e1e1e1;'>${odds[selectedTeam]}</td>
-                <td style='padding:6px;border:1px solid #e1e1e1;'>${payout}</td>
-                <td style='padding:6px;border:1px solid #e1e1e1;'>${timeStr}</td>
-            `;
-            // 新记录插到最上面
-            betHistoryBody.insertBefore(tr, betHistoryBody.firstChild);
+            bet.set('username', username);
+            bet.set('team', selectedTeam);
+            bet.set('amount', amount);
+            bet.set('odds', odds[selectedTeam]);
+            bet.set('payout', payout);
+            bet.set('time', timeStr);
+            bet.save().then(() => {
+                loadBetHistory();
+            });
         };
     </script>
 </body>
